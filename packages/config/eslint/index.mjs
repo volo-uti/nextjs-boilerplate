@@ -144,6 +144,8 @@ export default defineConfig([
       ],
       "@typescript-eslint/consistent-type-imports": "error",
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      // Open gaps in a UI package, written by hand until the package gets them; listed, never failed.
+      "no-warning-comments": ["warn", { terms: ["todo(library:"], location: "start" }],
     },
   },
   {
