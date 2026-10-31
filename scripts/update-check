@@ -1,0 +1,80 @@
+#!/bin/bash
+# Report outdated dependencies, Node LTS and pnpm. Outdated is not an error.
+# Exits non-zero only when the check itself fails.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+echo "== Outdated dependencies (pnpm outdated -r)"
+# pnpm exits 1 when something is outdated; any other failure is a real error.
+set +e
+pnpm outdated -r
+status=$?
+set -e
+[ "$status" -le 1 ] || { echo "update-check: pnpm outdated failed (exit $status)" >&2; exit 1; }
+
+node --input-type=module - <<'JS'
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+
+const MONTH_MS = 30.44 * 24 * 3600 * 1000;
+const fail = (message) => {
+  console.error(`update-check: ${message}`);
+  process.exit(1);
+};
+const getJson = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) fail(`${url} -> HTTP ${response.status}`);
+  return response.json();
+};
+
+const rootPkg = JSON.parse(readFileSync("package.json", "utf8"));
+
+// Node: latest LTS vs .nvmrc.
+console.log("\n== Node");
+const releases = await getJson("https://nodejs.org/dist/index.json").catch((e) => fail(e.message));
+const lts = releases.find((release) => release.lts);
+const nodePin = readFileSync(".nvmrc", "utf8").trim().replace(/^v/, "");
+console.log(`latest LTS: ${lts.version} (${lts.lts}); .nvmrc: ${nodePin}`);
+if (`v${nodePin}` !== lts.version) console.log("  -> update .nvmrc");
+
+// pnpm: latest vs packageManager.
+console.log("\n== pnpm");
+const pnpm = await getJson("https://registry.npmjs.org/pnpm/latest").catch((e) => fail(e.message));
+const pnpmPin = rootPkg.packageManager?.replace(/^pnpm@/, "");
+console.log(`latest: ${pnpm.version}; packageManager: ${pnpmPin ?? "not set"}`);
+if (pnpmPin && pnpmPin !== pnpm.version) console.log("  -> update packageManager");
+
+// Direct dependencies whose latest release is older than 12 months.
+console.log("\n== REVISIT (latest stable published more than 12 months ago)");
+const manifests = ["package.json"];
+for (const dir of ["apps", "packages"]) {
+  if (!existsSync(dir)) continue;
+  for (const name of readdirSync(dir)) {
+    if (existsSync(`${dir}/${name}/package.json`)) manifests.push(`${dir}/${name}/package.json`);
+  }
+}
+const names = new Set();
+for (const file of manifests) {
+  const pkg = JSON.parse(readFileSync(file, "utf8"));
+  for (const group of ["dependencies", "devDependencies", "peerDependencies"]) {
+    for (const [dep, range] of Object.entries(pkg[group] ?? {})) {
+      if (!String(range).startsWith("workspace:")) names.add(dep);
+    }
+  }
+}
+const cutoff = Date.now() - 12 * MONTH_MS;
+let revisit = 0;
+await Promise.all(
+  [...names].sort().map(async (dep) => {
+    const doc = await getJson(`https://registry.npmjs.org/${dep.replace("/", "%2F")}`).catch((e) => fail(e.message));
+    const latest = doc["dist-tags"].latest;
+    const published = new Date(doc.time[latest]);
+    if (published.getTime() < cutoff) {
+      revisit += 1;
+      console.log(`REVISIT ${dep}@${latest} (published ${published.toISOString().slice(0, 10)})`);
+    }
+  }),
+);
+if (revisit === 0) console.log("none");
+JS

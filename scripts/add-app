@@ -1,0 +1,84 @@
+#!/bin/bash
+# Create apps/<name> from the first app's skeleton (shell, i18n, error pages; no features).
+# Usage: scripts/add-app <name>
+set -euo pipefail
+
+die() { echo "add-app: $*" >&2; exit 1; }
+
+[ $# -eq 1 ] || die "usage: scripts/add-app <name>"
+name="$1"
+echo "$name" | grep -Eq '^[a-z][a-z0-9-]*$' || die "name must be lowercase letters, digits and hyphens, starting with a letter"
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+skeleton="$(ls -d apps/*/ 2>/dev/null | head -n 1 | sed 's|^apps/||; s|/$||')"
+[ -n "$skeleton" ] || die "no app found: the skeleton is copied from the first one in apps/"
+[ ! -e "apps/$name" ] || die "apps/$name already exists"
+
+# Next free port: 3100, 3200, ... (the first app uses 3000).
+port=3100
+while grep -rqs -e "--port $port" apps/*/package.json; do port=$((port + 100)); done
+
+mkdir "apps/$name"
+(cd "apps/$skeleton" && tar cf - \
+  --exclude='./node_modules' --exclude='./.next' --exclude='./src/features' \
+  --exclude='./next-env.d.ts' --exclude='./playwright-report' --exclude='./test-results' .) |
+  (cd "apps/$name" && tar xf -)
+
+NAME="$name" PORT="$port" SKELETON="$skeleton" node --input-type=module - <<'JS'
+import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+
+const { NAME: name, PORT: port, SKELETON: skeleton } = process.env;
+const app = `apps/${name}`;
+const writeJson = (file, data) => writeFileSync(file, `${JSON.stringify(data, null, 2)}\n`);
+
+// App package.
+const pkg = JSON.parse(readFileSync(`${app}/package.json`, "utf8"));
+pkg.name = `@repo/${name}`;
+for (const key of ["dev", "start"]) pkg.scripts[key] = pkg.scripts[key].replace(/--port \d+/, `--port ${port}`);
+writeJson(`${app}/package.json`, pkg);
+
+// Playwright talks to this app's port.
+const pw = readFileSync(`${app}/playwright.config.ts`, "utf8").replace(/const port = \d+;/, `const port = ${port};`);
+writeFileSync(`${app}/playwright.config.ts`, pw);
+
+// Titles in every locale file.
+for (const file of readdirSync(`${app}/messages`)) {
+  const path = `${app}/messages/${file}`;
+  const messages = JSON.parse(readFileSync(path, "utf8"));
+  messages.Metadata.title = name;
+  messages.Metadata.description = name;
+  messages.Shell.title = name;
+  messages.Home.description = messages.Home.description.replaceAll(`apps/${skeleton}/`, `${app}/`);
+  writeJson(path, messages);
+}
+
+// Root `dev:<name>` script, placed after the other dev:* scripts.
+const root = JSON.parse(readFileSync("package.json", "utf8"));
+const scripts = {};
+const devKeys = Object.keys(root.scripts).filter((key) => key.startsWith("dev:"));
+const last = devKeys[devKeys.length - 1];
+for (const [key, value] of Object.entries(root.scripts)) {
+  scripts[key] = value;
+  if (key === last) scripts[`dev:${name}`] = `pnpm --filter @repo/${name} dev`;
+}
+root.scripts = scripts;
+writeJson("package.json", root);
+JS
+
+# Without features the home route has nothing to render: use a plain heading.
+cat > "apps/$name/src/app/[locale]/page.tsx" <<'PAGE'
+import { useTranslations } from "next-intl";
+import { setRequestLocale } from "next-intl/server";
+import { use } from "react";
+
+export default function Page({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = use(params);
+  setRequestLocale(locale);
+  const t = useTranslations("Home");
+  return <h1 className="text-4xl font-bold tracking-tight">{t("title")}</h1>;
+}
+PAGE
+
+echo "Created apps/$name (@repo/$name) on port $port."
+echo "Next: pnpm install, then pnpm dev:$name"

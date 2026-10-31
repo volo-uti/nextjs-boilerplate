@@ -1,0 +1,27 @@
+{
+  "name": "@repo/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/*": "./tsconfig/*.json",
+    "./eslint": "./eslint/index.mjs",
+    "./prettier": "./prettier/index.ts",
+    "./vitest": "./vitest/index.ts"
+  },
+  "dependencies": {
+    "@eslint/js": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint-config-next": "catalog:",
+    "eslint-import-resolver-typescript": "catalog:",
+    "eslint-plugin-boundaries": "catalog:",
+    "globals": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "typescript-eslint": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  }
+}

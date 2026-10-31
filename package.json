@@ -1,0 +1,36 @@
+{
+  "name": "nextjs-boilerplate",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Next.js monorepo template: App Router, next-intl, Tailwind 4, shadcn/ui (Base UI), lint-enforced layers.",
+  "license": "MIT",
+  "packageManager": "pnpm@12.16.1",
+  "scripts": {
+    "dev": "pnpm -r --parallel --if-present dev",
+    "dev:web": "pnpm --filter @repo/web dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "eslint .",
+    "fmt": "prettier --write .",
+    "fmt:check": "prettier --check .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "index": "node scripts/agent-index.mjs",
+    "check:index": "node scripts/agent-index.mjs --check",
+    "check:locales": "node scripts/check-locales.mjs",
+    "check": "pnpm fmt:check && pnpm lint && pnpm typecheck && pnpm check:locales && pnpm check:index && pnpm test && pnpm build",
+    "e2e": "pnpm --filter @repo/web e2e",
+    "verify": "bash scripts/verify",
+    "update-check": "bash scripts/update-check",
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && lefthook install || true"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@repo/config": "workspace:*",
+    "eslint": "catalog:",
+    "lefthook": "catalog:",
+    "prettier": "catalog:",
+    "prettier-plugin-tailwindcss": "catalog:",
+    "typescript": "catalog:"
+  }
+}

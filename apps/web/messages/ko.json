@@ -1,0 +1,25 @@
+{
+  "Metadata": {
+    "title": "Next.js 보일러플레이트",
+    "description": "계층을 린트로 강제하는 Next.js 모노레포 템플릿입니다."
+  },
+  "Shell": {
+    "title": "Next.js 보일러플레이트",
+    "toggleTheme": "테마 전환",
+    "language": "언어"
+  },
+  "Home": {
+    "title": "안녕하세요",
+    "description": "apps/web/src/features 에서 시작하세요."
+  },
+  "NotFound": {
+    "title": "페이지를 찾을 수 없습니다",
+    "description": "찾는 페이지가 없습니다.",
+    "home": "홈으로"
+  },
+  "Error": {
+    "title": "문제가 발생했습니다",
+    "description": "예기치 않은 오류가 발생했습니다.",
+    "retry": "다시 시도"
+  }
+}

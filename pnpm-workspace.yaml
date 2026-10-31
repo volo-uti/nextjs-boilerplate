@@ -1,0 +1,55 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Do not install versions published less than a day ago (minutes).
+minimumReleaseAge: 1440
+
+# Packages whose install scripts may run.
+allowBuilds:
+  "@parcel/watcher": true
+  "@swc/core": true
+  lefthook: true
+  unrs-resolver: true
+
+# Every shared version lives here; workspace packages reference it with "catalog:".
+catalog:
+  "@axe-core/playwright": ^4.14.0
+  "@base-ui/react": ^1.9.0
+  "@eslint/js": ^10.0.0
+  "@playwright/test": ^1.64.1
+  "@tailwindcss/postcss": ^4.3.3
+  "@tanstack/react-query": ^5.105.0
+  "@testing-library/jest-dom": ^7.0.1
+  "@testing-library/react": ^16.3.3
+  "@testing-library/user-event": ^14.6.8
+  "@types/node": ^26.6.6
+  "@types/react": ^19.3.0
+  "@types/react-dom": ^19.3.0
+  "@vitejs/plugin-react": ^6.1.2
+  babel-plugin-react-compiler: ^1.0.0
+  class-variance-authority: ^0.7.1
+  clsx: ^2.1.1
+  eslint: ^10.13.0
+  eslint-config-next: ^16.4.3
+  eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-boundaries: ^7.4.0
+  globals: ^17.0.0
+  jsdom: ^30.1.3
+  lefthook: ^2.2.2
+  lucide-react: ^1.65.0
+  next: ^16.4.3
+  next-intl: ^4.14.9
+  postcss: ^8.5.0
+  prettier: ^3.9.10
+  prettier-plugin-tailwindcss: ^0.8.1
+  react: ^19.3.1
+  react-dom: ^19.3.1
+  tailwind-merge: ^3.7.0
+  tailwindcss: ^4.3.3
+  typescript: 6.0.3
+  typescript-eslint: ^8.72.1
+  vite: ^8.3.5
+  vitest: ^5.0.5
+  zod: ^4.6.7
+  zustand: ^5.0.16
