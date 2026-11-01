@@ -131,6 +131,14 @@ for (const [file, pkgDir] of files) {
   const seen = new Set();
   const entries = [];
   for (const stmt of source.statements) {
+    // `export { x }` and `export * from` carry no doc comment of their own, so they cannot be indexed.
+    if (ts.isExportDeclaration(stmt)) {
+      const { line } = source.getLineAndCharacterOfPosition(stmt.getStart(source));
+      problems.push(
+        `${file}:${line + 1} re-export; export the declaration itself so its doc comment is indexed`,
+      );
+      continue;
+    }
     if (!isExported(stmt)) continue;
     const sentence = firstSentence(stmt);
     for (const name of exportedNames(stmt)) {
