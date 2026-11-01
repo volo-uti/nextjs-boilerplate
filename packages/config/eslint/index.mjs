@@ -4,7 +4,8 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
 
-// Raw elements that have a replacement. A new atom adds one line here.
+// Raw elements that have a replacement. A new atom adds one line here. A key is a tag name, or a full
+// `JSXOpeningElement…` selector as UI packages ship them, so a package's map can be spread in.
 const rawElementReplacements = {
   button: "Use Button from @repo/ui/atoms/button (see the index in AGENTS.md).",
 };
@@ -155,7 +156,9 @@ export default defineConfig([
       "no-restricted-syntax": [
         "error",
         ...Object.entries(rawElementReplacements).map(([tag, message]) => ({
-          selector: `JSXOpeningElement[name.name='${tag}']`,
+          selector: tag.startsWith("JSXOpeningElement")
+            ? tag
+            : `JSXOpeningElement[name.name='${tag}']`,
           message,
         })),
       ],
